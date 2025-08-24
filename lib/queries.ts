@@ -71,6 +71,8 @@ export type VariantNode = {
 	availableForSale: boolean;
 	price: { amount: string; currencyCode: string };
 	selectedOptions: { name: string; value: string }[];
+  image?: { url: string; altText?: string | null } | null;
+  quantityAvailable?: number | null;
 };
 
 export type ProductDetail = {
@@ -109,7 +111,7 @@ const query = gql/* GraphQL */ `
 			options {
 				name
 				values
-			} # <-- added
+			}
 			variants(first: 50) {
 				edges {
 					node {
@@ -124,6 +126,8 @@ const query = gql/* GraphQL */ `
 							name
 							value
 						}
+            image{ url altText }
+            quantityAvailable
 					}
 				}
 			}

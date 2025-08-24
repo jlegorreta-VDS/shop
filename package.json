@@ -9,14 +9,15 @@
 		"lint": "eslint"
 	},
 	"dependencies": {
+		"clsx": "^2.1.1",
+		"framer-motion": "^12.23.12",
 		"graphql-request": "^7.2.0",
+		"isomorphic-dompurify": "^2.6.0",
 		"next": "15.5.0",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
 		"zod": "^4.0.17",
-		"zustand": "^5.0.8",
-		"isomorphic-dompurify": "^2.6.0",
-		"clsx": "^2.1.1"
+		"zustand": "^5.0.8"
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
