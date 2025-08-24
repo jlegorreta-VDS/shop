@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { ProductDetail, VariantNode } from "@/lib/queries";
 import AddToCart from "./add-to-cart";
 
@@ -23,7 +23,7 @@ export default function OptionPicker({
 		[product.variants]
 	);
 
-	// Default selections: use the first *available* variant, otherwise first
+	// Default variant = first available or first
 	const defaultVariant =
 		variants.find((v) => v.availableForSale) ?? variants[0] ?? null;
 	const defaultSelections = useMemo(() => {
@@ -35,7 +35,39 @@ export default function OptionPicker({
 	const [selections, setSelections] =
 		useState<Record<string, string>>(defaultSelections);
 
-	// Compute the currently selected variant (may be unavailable/null if combo doesn't exist)
+	// Guided auto‑selection: whenever selections change, ensure each option has a valid value.
+	useEffect(() => {
+		const next = { ...selections };
+		let changed = false;
+		for (const opt of product.options) {
+			const currentVal = next[opt.name];
+			const currentValid =
+				currentVal &&
+				variants.some(
+					(v) =>
+						v.availableForSale &&
+						matchesAll(v, { ...next, [opt.name]: currentVal })
+				);
+			if (!currentValid) {
+				// pick first available value for this option
+				const fallback = opt.values.find((val) =>
+					variants.some(
+						(v) =>
+							v.availableForSale &&
+							matchesAll(v, { ...next, [opt.name]: val })
+					)
+				);
+				if (fallback) {
+					next[opt.name] = fallback;
+					changed = true;
+				} else {
+					delete next[opt.name];
+				}
+			}
+		}
+		if (changed) setSelections(next);
+	}, [selections, product.options, variants]);
+
 	const current = useMemo(() => {
 		return (
 			variants.find((v) =>
@@ -43,13 +75,6 @@ export default function OptionPicker({
 			) || null
 		);
 	}, [variants, selections]);
-
-	// Whether a particular value for an option is selectable given current selections
-	function isValueAvailable(optionName: string, value: string): boolean {
-		const trial = { ...selections, [optionName]: value };
-		// There is availability if any variant matches all chosen values and is for sale
-		return variants.some((v) => v.availableForSale && matchesAll(v, trial));
-	}
 
 	function setOption(name: string, value: string) {
 		setSelections((prev) => ({ ...prev, [name]: value }));
@@ -61,16 +86,42 @@ export default function OptionPicker({
 		<div className="space-y-6">
 			{product.options.map((opt) => (
 				<div key={opt.name}>
-					<div className="mb-2 text-sm font-medium">{opt.name}</div>
-					<div className="flex flex-wrap gap-2">
+					<div
+						className="mb-2 text-sm font-medium"
+						id={`option-label-${opt.name}`}
+					>
+						{opt.name}
+					</div>
+					{/* A11y: use radiogroup semantics for single‑select lists */}
+					<div
+						className="flex flex-wrap gap-2"
+						role="radiogroup"
+						aria-labelledby={`option-label-${opt.name}`}
+					>
 						{opt.values.map((val) => {
 							const selected = selections[opt.name] === val;
-							const available = isValueAvailable(opt.name, val);
+							const available = variants.some(
+								(v) =>
+									v.availableForSale &&
+									matchesAll(v, {
+										...selections,
+										[opt.name]: val,
+									})
+							);
+							const ariaLabel = available
+								? val
+								: `${val} (unavailable)`;
 							return (
 								<button
 									key={val}
 									type="button"
-									onClick={() => setOption(opt.name, val)}
+									role="radio"
+									aria-checked={selected}
+									aria-disabled={!available}
+									aria-label={ariaLabel}
+									onClick={() =>
+										available && setOption(opt.name, val)
+									}
 									disabled={!available}
 									className={`rounded-full border px-3 py-1 text-sm ${
 										selected
@@ -81,9 +132,14 @@ export default function OptionPicker({
 											? "hover:shadow"
 											: "opacity-40 cursor-not-allowed"
 									}`}
-									aria-pressed={selected}
 								>
-									{val}
+									<span aria-hidden="true">{val}</span>
+									{!available && (
+										<span className="sr-only">
+											{" "}
+											(unavailable)
+										</span>
+									)}
 								</button>
 							);
 						})}
@@ -106,6 +162,7 @@ export default function OptionPicker({
 				<button
 					className="rounded-xl bg-gray-200 px-5 py-3 text-gray-500"
 					disabled
+					aria-disabled="true"
 				>
 					Unavailable selection
 				</button>
