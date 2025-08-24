@@ -1,16 +1,18 @@
 import { getProductByHandle } from "@/lib/queries";
 import AddToCart from "./add-to-cart";
 import { notFound } from "next/navigation";
-import SafeHTML from "@/utils/safe-html"; // <-- sanitize before rendering
+import SafeHTML from "@/utils/safe-html";
 
 export default async function ProductPage({
 	params,
 }: {
-	params: { handle: string };
+	params: Promise<{ handle: string }>;
 }) {
-	const product = await getProductByHandle(params.handle);
+	const { handle } = await params; // ⟵ await params
+	const product = await getProductByHandle(handle);
 	if (!product) return notFound();
 	const firstVariant = product.variants?.edges?.[0]?.node;
+
 	return (
 		<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 			{/* eslint-disable-next-line @next/next/no-img-element */}
