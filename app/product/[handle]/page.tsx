@@ -1,17 +1,16 @@
 import { getProductByHandle } from "@/lib/queries";
-import AddToCart from "./add-to-cart";
 import { notFound } from "next/navigation";
 import SafeHTML from "@/utils/safe-html";
+import OptionPicker from "./option-picker";
 
 export default async function ProductPage({
 	params,
 }: {
 	params: Promise<{ handle: string }>;
 }) {
-	const { handle } = await params; // ⟵ await params
+	const { handle } = await params; // Next 15 pattern
 	const product = await getProductByHandle(handle);
 	if (!product) return notFound();
-	const firstVariant = product.variants?.edges?.[0]?.node;
 
 	return (
 		<div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -27,11 +26,16 @@ export default async function ProductPage({
 			/>
 			<div>
 				<h1 className="mb-2 text-2xl font-semibold">{product.title}</h1>
+				<OptionPicker
+					product={{
+						options: product.options,
+						variants: product.variants,
+					}}
+				/>
 				<SafeHTML
 					html={product.descriptionHtml}
-					className="prose mb-4"
+					className="prose my-6"
 				/>
-				{firstVariant && <AddToCart merchandiseId={firstVariant.id} />}
 			</div>
 		</div>
 	);

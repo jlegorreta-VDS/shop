@@ -80,56 +80,61 @@ export type ProductDetail = {
 	descriptionHtml: string;
 	featuredImage?: { url: string; altText?: string | null } | null;
 	images: { edges: Edge<{ url: string; altText?: string | null }>[] };
+	options: { name: string; values: string[] }[]; // <-- add this line
 	variants: { edges: Edge<VariantNode>[] };
 };
 
 type ProductResponse = { product: ProductDetail | null };
 
 export async function getProductByHandle(handle: string) {
-	const query = gql/* GraphQL */ `
-		query Product($handle: String!) {
-			product(handle: $handle) {
-				id
-				title
-				handle
-				descriptionHtml
-				featuredImage {
-					url
-					altText
-				}
-				images(first: 8) {
-					edges {
-						node {
-							url
-							altText
-						}
+const query = gql/* GraphQL */ `
+	query Product($handle: String!) {
+		product(handle: $handle) {
+			id
+			title
+			handle
+			descriptionHtml
+			featuredImage {
+				url
+				altText
+			}
+			images(first: 8) {
+				edges {
+					node {
+						url
+						altText
 					}
 				}
-				variants(first: 50) {
-					edges {
-						node {
-							id
-							title
-							availableForSale
-							price {
-								amount
-								currencyCode
-							}
-							selectedOptions {
-								name
-								value
-							}
+			}
+			options {
+				name
+				values
+			} # <-- added
+			variants(first: 50) {
+				edges {
+					node {
+						id
+						title
+						availableForSale
+						price {
+							amount
+							currencyCode
+						}
+						selectedOptions {
+							name
+							value
 						}
 					}
 				}
 			}
 		}
-	`;
+	}
+`;
 	const data = await shopify.request<ProductResponse>(query, { handle });
 	return data.product;
 }
 
-// ---------- Cart API (Storefront) ----------
+// ---------- Cart API (unchanged below) ----------
 export type CartSummary = {
 	id: string;
 	checkoutUrl: string;
