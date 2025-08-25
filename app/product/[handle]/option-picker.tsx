@@ -17,10 +17,12 @@ export default function OptionPicker({
 	product,
 	onVariantChange,
 	forceVariantId,
+	lowStockThreshold = 5,
 }: {
 	product: Pick<ProductDetail, "options" | "variants">;
 	onVariantChange?: (variant: VariantNode | null) => void;
-	forceVariantId?: string; // when this changes, picker selects the variant and updates selections
+	forceVariantId?: string;
+	lowStockThreshold?: number;
 }) {
 	const variants = useMemo(
 		() => product.variants.edges.map((e) => e.node),
@@ -43,7 +45,6 @@ export default function OptionPicker({
 	const [selections, setSelections] =
 		useState<Record<string, string>>(defaultSelections);
 
-	// If a thumbnail asks us to select a specific variant, honor it
 	useEffect(() => {
 		if (!forceVariantId) return;
 		const v = variants.find((v) => v.id === forceVariantId) || null;
@@ -51,7 +52,6 @@ export default function OptionPicker({
 		const next = selectionsFromVariant(v);
 		const changed = JSON.stringify(next) !== JSON.stringify(selections);
 		if (changed) setSelections(next);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [forceVariantId]);
 
 	useEffect(() => {
@@ -101,7 +101,24 @@ export default function OptionPicker({
 		setSelections((prev) => ({ ...prev, [name]: value }));
 	}
 
+	function stockFor(trial: Record<string, string>): number {
+		return variants
+			.filter((v) => v.availableForSale && matchesAll(v, trial))
+			.reduce(
+				(sum, v) =>
+					sum +
+					(typeof v.quantityAvailable === "number"
+						? v.quantityAvailable
+						: 0),
+				0
+			);
+	}
+
 	const displayPrice = (current ?? defaultVariant)?.price;
+	const currentQty =
+		typeof current?.quantityAvailable === "number"
+			? current.quantityAvailable
+			: 0;
 
 	return (
 		<div className="space-y-6">
@@ -121,12 +138,11 @@ export default function OptionPicker({
 						{opt.values.map((val) => {
 							const trial = { ...selections, [opt.name]: val };
 							const selected = selections[opt.name] === val;
-							const available = variants.some(
-								(v) =>
-									v.availableForSale && matchesAll(v, trial)
-							);
+							const count = stockFor(trial);
+							const available = count > 0;
+							const low = available && count <= lowStockThreshold;
 							const ariaLabel = available
-								? `${val}`
+								? `${val} (${count}${low ? " low" : ""})`
 								: `${val} (unavailable)`;
 							return (
 								<button
@@ -140,7 +156,7 @@ export default function OptionPicker({
 										available && setOption(opt.name, val)
 									}
 									disabled={!available}
-									className={`rounded-full border px-3 py-1 text-sm ${
+									className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${
 										selected
 											? "bg-black text-white"
 											: "bg-white"
@@ -158,6 +174,17 @@ export default function OptionPicker({
 									>
 										{val}
 									</span>
+									<span
+										className="text-xs opacity-70"
+										aria-hidden="true"
+									>
+										{available ? `(${count})` : `(0)`}
+									</span>
+									{low && (
+										<span className="rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-900">
+											Low
+										</span>
+									)}
 									{!available && (
 										<span className="sr-only">
 											{" "}
@@ -177,6 +204,26 @@ export default function OptionPicker({
 						style: "currency",
 						currency: displayPrice.currencyCode,
 					}).format(parseFloat(displayPrice.amount))}
+				</div>
+			)}
+
+			{current && (
+				<div className="-mt-2 text-sm">
+					{current.availableForSale ? (
+						currentQty <= lowStockThreshold ? (
+							<span className="inline-block rounded bg-amber-100 px-2 py-0.5 text-amber-900">
+								Only {currentQty} left
+							</span>
+						) : (
+							<span className="inline-block rounded bg-emerald-100 px-2 py-0.5 text-emerald-900">
+								In stock
+							</span>
+						)
+					) : (
+						<span className="inline-block rounded bg-gray-200 px-2 py-0.5 text-gray-600">
+							Out of stock
+						</span>
+					)}
 				</div>
 			)}
 
