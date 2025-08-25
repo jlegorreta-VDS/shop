@@ -2,6 +2,8 @@ import "./globals.css";
 import Link from "next/link";
 import { ReactNode } from "react";
 import CartButton from "./cart-button";
+import MiniCartDrawer from "@/components/mini-cart-drawer";
+
 
 export const metadata = {
 	title: "Shop",
@@ -20,9 +22,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 						<CartButton />
 					</nav>
 				</header>
+				<MiniCartDrawer />
 				<main className="mx-auto max-w-5xl p-4">{children}</main>
 				<footer className="mx-auto max-w-5xl p-6 text-sm text-gray-500">
-					© {new Date().getFullYear()} Vega
+					© {new Date().getFullYear()} Vega Design Studio
 				</footer>
 			</body>
 		</html>

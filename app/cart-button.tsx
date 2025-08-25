@@ -1,12 +1,14 @@
 "use client";
-import Link from "next/link";
 import { useCart } from "@/store/cart";
+import { useUI } from "@/store/ui";
 
 export default function CartButton() {
-  const qty = useCart((s) => s.totalQuantity);
-  return (
-    <Link href="/cart" className="relative underline">
-      Cart{qty ? ` (${qty})` : ""}
-    </Link>
-  );
+	const qty = useCart((s) => s.totalQuantity);
+	const openCart = useUI((s) => s.openCart);
+
+	return (
+		<button onClick={openCart} className="relative underline">
+			Cart{qty ? ` (${qty})` : ""}
+		</button>
+	);
 }
