@@ -17,7 +17,7 @@ export default function OptionPicker({
 	product,
 	onVariantChange,
 	forceVariantId,
-	lowStockThreshold = 5,
+	lowStockThreshold = 2,
 }: {
 	product: Pick<ProductDetail, "options" | "variants">;
 	onVariantChange?: (variant: VariantNode | null) => void;
@@ -45,14 +45,15 @@ export default function OptionPicker({
 	const [selections, setSelections] =
 		useState<Record<string, string>>(defaultSelections);
 
-	useEffect(() => {
-		if (!forceVariantId) return;
-		const v = variants.find((v) => v.id === forceVariantId) || null;
-		if (!v) return;
-		const next = selectionsFromVariant(v);
-		const changed = JSON.stringify(next) !== JSON.stringify(selections);
-		if (changed) setSelections(next);
-	}, [forceVariantId]);
+  useEffect(() => {
+    if (!forceVariantId) return;
+    const v = variants.find((v) => v.id === forceVariantId) || null;
+    if (!v) return;
+    setSelections((prev) => {
+      const next = selectionsFromVariant(v);
+      return JSON.stringify(next) !== JSON.stringify(prev) ? next : prev;
+    });
+  }, [forceVariantId, variants]);
 
 	useEffect(() => {
 		const next = { ...selections };
